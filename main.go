@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 )
 
 type Task struct {
@@ -22,7 +22,19 @@ var db *sql.DB
 
 func main() {
 	var err error
-	db, err = sql.Open("sqlite3", "./tasks.sqlite3")
+	// PostgreSQL connection parameters
+	const (
+		host     = ""
+		port     = 0
+		user     = ""
+		password = ""
+		dbname   = ""
+	)
+
+	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=require",
+		host, port, user, password, dbname)
+
+	db, err = sql.Open("postgres", connStr)
 	if err != nil {
 		fmt.Println("Error opening database connection:", err)
 		return
@@ -58,7 +70,7 @@ func main() {
 func createTable() {
 	createTableQuery := `
 	CREATE TABLE IF NOT EXISTS tasks (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id SERIAL PRIMARY KEY,
 		title TEXT,
 		priority TEXT,
 		category TEXT,
@@ -91,7 +103,7 @@ func addTask() {
 
 	insertQuery := `
 	INSERT INTO tasks (title, priority, category, completed) 
-	VALUES (?, ?, ?, ?);`
+	VALUES ($1, $2, $3, $4);`
 
 	_, err := db.Exec(insertQuery, task.Title, task.Priority, task.Category, task.Completed)
 	if err != nil {
@@ -108,7 +120,7 @@ func updateTask() {
 	fmt.Scanln(&taskID)
 
 	var task Task
-	row := db.QueryRow("SELECT id, title, priority, category, completed FROM tasks WHERE id = ?", taskID)
+	row := db.QueryRow("SELECT id, title, priority, category, completed FROM tasks WHERE id = $1", taskID)
 	err := row.Scan(&task.ID, &task.Title, &task.Priority, &task.Category, &task.Completed)
 	if err != nil {
 		fmt.Println("Error fetching task details:", err)
@@ -138,8 +150,8 @@ func updateTask() {
 
 	updateQuery := `
 	UPDATE tasks 
-	SET title=?, priority=?, category=? 
-	WHERE id=?;`
+	SET title=$1, priority=$2, category=$3 
+	WHERE id=$4;`
 
 	_, err = db.Exec(updateQuery, task.Title, task.Priority, task.Category, task.ID)
 	if err != nil {
@@ -155,7 +167,7 @@ func deleteTask() {
 	fmt.Print("Enter task ID to delete: ")
 	fmt.Scanln(&taskID)
 
-	deleteQuery := "DELETE FROM tasks WHERE id=?;"
+	deleteQuery := "DELETE FROM tasks WHERE id=$1;"
 
 	_, err := db.Exec(deleteQuery, taskID)
 	if err != nil {
