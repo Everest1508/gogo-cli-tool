@@ -9,7 +9,7 @@ gogo is a simple CLI-based todo list manager written in Go. It allows users to a
 - List all tasks.
 
 **Installation:**
-1. Download the latest release from @everest1508 page.
+1. Download the latest release from everest1508/gogo-cli-tool page.
 2. Extract the downloaded ZIP file.
 3. Move the `gogo.exe` executable to a directory included in your system's PATH environment variable.
 
